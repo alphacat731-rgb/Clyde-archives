@@ -4,115 +4,630 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Discord Discover - Clyde Vault</title>
-  
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
       background-color: #313338;
       color: #f2f3f5;
     }
 
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: #2b2d31; }
-    ::-webkit-scrollbar-thumb { background: #1a1b1e; border-radius: 4px; }
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
 
-    /* Custom gradient hero banner matching Discord Discover */
+    ::-webkit-scrollbar-track {
+      background: #2b2d31;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #1a1b1e;
+      border-radius: 4px;
+    }
+
     .discover-hero {
-      background: linear-gradient(135deg, #5865f2 0%, #4752c4 50%, #2b2d31 100%);
+      background:
+        radial-gradient(
+          circle at 15% 10%,
+          rgba(255, 255, 255, 0.18),
+          transparent 30%
+        ),
+        radial-gradient(
+          circle at 85% 20%,
+          rgba(255, 255, 255, 0.10),
+          transparent 28%
+        ),
+        linear-gradient(
+          135deg,
+          #5865f2 0%,
+          #4752c4 52%,
+          #2b2d31 100%
+        );
+    }
+
+    .search-input {
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.22);
+    }
+
+    .art-card {
+      animation: cardIn 0.22s ease both;
+    }
+
+    @keyframes cardIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .image-wrap {
+      position: relative;
+      height: 210px;
+      background: #1e1f22;
+      overflow: hidden;
+    }
+
+    .image-wrap img.art-image {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      transition:
+        transform 0.25s ease,
+        opacity 0.25s ease;
+    }
+
+    .art-card:hover .image-wrap img.art-image {
+      transform: scale(1.035);
+    }
+
+    .image-loader {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: #1e1f22;
+      z-index: 1;
+    }
+
+    .image-loader.hidden {
+      display: none;
+    }
+
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid #4e5058;
+      border-top-color: #5865f2;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .broken-image {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      text-align: center;
+      padding: 20px;
+      color: #949ba4;
+      background: #1e1f22;
+      z-index: 2;
+    }
+
+    .broken-image.show {
+      display: grid;
+    }
+
+    .lightbox {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+    }
+
+    .lightbox.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .lightbox img {
+      max-width: min(1200px, 94vw);
+      max-height: 88vh;
+      object-fit: contain;
+    }
+
+    .search-status {
+      min-height: 20px;
+    }
+
+    .empty-state {
+      min-height: 250px;
+    }
+
+    .source-badge {
+      backdrop-filter: blur(8px);
     }
   </style>
 </head>
+
 <body class="h-screen overflow-hidden flex select-none">
 
-  <aside class="w-[72px] bg-[#1e1f22] flex flex-col items-center py-3 gap-2 flex-shrink-0">
-    <div class="w-12 h-12 bg-[#313338] hover:bg-[#5865f2] rounded-[24px] hover:rounded-[16px] flex items-center justify-center cursor-pointer transition-all group">
-      <i data-lucide="bot" class="w-6 h-6 text-[#dbdee1] group-hover:text-white"></i>
+  <!-- =========================================================
+       SERVER RAIL
+       ========================================================= -->
+
+  <aside
+    class="w-[72px] bg-[#1e1f22] flex flex-col items-center py-3 gap-2 flex-shrink-0"
+  >
+
+    <div
+      class="w-12 h-12 bg-[#313338] hover:bg-[#5865f2]
+             rounded-[24px] hover:rounded-[16px]
+             flex items-center justify-center
+             cursor-pointer transition-all group"
+    >
+      <i
+        data-lucide="bot"
+        class="w-6 h-6 text-[#dbdee1] group-hover:text-white"
+      ></i>
     </div>
+
     <div class="w-8 h-[2px] bg-[#35363c] rounded my-1"></div>
-    <div class="w-12 h-12 bg-[#23a55a] rounded-[16px] flex items-center justify-center cursor-pointer transition-all">
-      <i data-lucide="compass" class="w-7 h-7 text-white"></i>
+
+    <div
+      class="w-12 h-12 bg-[#23a55a] rounded-[16px]
+             flex items-center justify-center
+             cursor-pointer transition-all"
+    >
+      <i
+        data-lucide="compass"
+        class="w-7 h-7 text-white"
+      ></i>
     </div>
+
   </aside>
 
-  <aside class="w-60 bg-[#2b2d31] flex flex-col flex-shrink-0">
-    <div class="h-12 border-b border-[#1f2023] px-4 flex items-center font-bold text-lg text-white">
+
+  <!-- =========================================================
+       DISCOVER SIDEBAR
+       ========================================================= -->
+
+  <aside
+    class="w-60 bg-[#2b2d31] flex flex-col flex-shrink-0"
+  >
+
+    <div
+      class="h-12 border-b border-[#1f2023]
+             px-4 flex items-center
+             font-bold text-lg text-white"
+    >
       Discover
     </div>
 
+
     <div class="p-2 space-y-1 overflow-y-auto flex-1">
-      <button onclick="filterCategory('all')" id="nav-all" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-md bg-[#35373c] text-white font-medium text-sm">
-        <i data-lucide="compass" class="w-5 h-5 text-[#5865f2]"></i>
+
+      <button
+        onclick="filterCategory('all')"
+        id="nav-all"
+        class="nav-btn w-full flex items-center gap-3
+               px-3 py-2 rounded-md
+               bg-[#35373c] text-white
+               font-medium text-sm"
+      >
+        <i
+          data-lucide="compass"
+          class="w-5 h-5 text-[#5865f2]"
+        ></i>
+
         <span>Home</span>
       </button>
 
-      <button onclick="filterCategory('originals')" id="nav-originals" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-[#35373c] text-[#949ba4] hover:text-white font-medium text-sm transition-colors">
-        <i data-lucide="sparkles" class="w-5 h-5"></i>
+
+      <button
+        onclick="filterCategory('originals')"
+        id="nav-originals"
+        class="nav-btn w-full flex items-center gap-3
+               px-3 py-2 rounded-md
+               hover:bg-[#35373c]
+               text-[#949ba4] hover:text-white
+               font-medium text-sm transition-colors"
+      >
+        <i
+          data-lucide="sparkles"
+          class="w-5 h-5"
+        ></i>
+
         <span>2021 Rebrand</span>
       </button>
 
-      <button onclick="filterCategory('fanart')" id="nav-fanart" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-[#35373c] text-[#949ba4] hover:text-white font-medium text-sm transition-colors">
-        <i data-lucide="palette" class="w-5 h-5"></i>
+
+      <button
+        onclick="filterCategory('fanart')"
+        id="nav-fanart"
+        class="nav-btn w-full flex items-center gap-3
+               px-3 py-2 rounded-md
+               hover:bg-[#35373c]
+               text-[#949ba4] hover:text-white
+               font-medium text-sm transition-colors"
+      >
+        <i
+          data-lucide="palette"
+          class="w-5 h-5"
+        ></i>
+
         <span>Fan Art & Drawings</span>
       </button>
 
-      <button onclick="filterCategory('memes')" id="nav-memes" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-[#35373c] text-[#949ba4] hover:text-white font-medium text-sm transition-colors">
-        <i data-lucide="smile" class="w-5 h-5"></i>
+
+      <button
+        onclick="filterCategory('memes')"
+        id="nav-memes"
+        class="nav-btn w-full flex items-center gap-3
+               px-3 py-2 rounded-md
+               hover:bg-[#35373c]
+               text-[#949ba4] hover:text-white
+               font-medium text-sm transition-colors"
+      >
+        <i
+          data-lucide="smile"
+          class="w-5 h-5"
+        ></i>
+
         <span>Memes & Edits</span>
       </button>
+
     </div>
 
-    <div class="h-14 bg-[#232428] px-3 flex items-center justify-between flex-shrink-0">
+
+    <!-- User panel -->
+
+    <div
+      class="h-14 bg-[#232428] px-3
+             flex items-center justify-between
+             flex-shrink-0"
+    >
+
       <div class="flex items-center gap-2">
-        <div class="w-8 h-8 rounded-full bg-[#5865f2] flex items-center justify-center font-bold text-white text-xs">Mg</div>
-        <div class="flex flex-col">
-          <span class="text-xs font-bold text-white leading-tight">Mg</span>
-          <span class="text-[10px] text-[#949ba4]">#9282</span>
+
+        <div
+          class="w-8 h-8 rounded-full bg-[#5865f2]
+                 flex items-center justify-center
+                 font-bold text-white text-xs"
+        >
+          Mg
         </div>
+
+        <div class="flex flex-col">
+          <span class="text-xs font-bold text-white leading-tight">
+            Mg
+          </span>
+
+          <span class="text-[10px] text-[#949ba4]">
+            #9282
+          </span>
+        </div>
+
       </div>
+
+
       <div class="flex items-center text-[#b5bac1]">
-        <button class="p-1 hover:text-white"><i data-lucide="mic" class="w-4 h-4"></i></button>
-        <button class="p-1 hover:text-white"><i data-lucide="headphones" class="w-4 h-4"></i></button>
-        <button class="p-1 hover:text-white"><i data-lucide="settings" class="w-4 h-4"></i></button>
+
+        <button
+          class="p-1 hover:text-white"
+          aria-label="Mute"
+        >
+          <i
+            data-lucide="mic"
+            class="w-4 h-4"
+          ></i>
+        </button>
+
+        <button
+          class="p-1 hover:text-white"
+          aria-label="Deafen"
+        >
+          <i
+            data-lucide="headphones"
+            class="w-4 h-4"
+          ></i>
+        </button>
+
+        <button
+          class="p-1 hover:text-white"
+          aria-label="Settings"
+        >
+          <i
+            data-lucide="settings"
+            class="w-4 h-4"
+          ></i>
+        </button>
+
       </div>
+
     </div>
+
   </aside>
 
-  <main class="flex-1 flex flex-col bg-[#313338] h-full overflow-y-auto relative">
-    
-    <div class="discover-hero relative p-12 flex flex-col items-center justify-center text-center">
-      <h1 class="text-3xl font-extrabold text-white mb-2">Find your favorite Clyde art on Discord</h1>
-      <p class="text-sm text-[#dbdee1] max-w-md mb-6">From original 2021 rebrand memes to community fan art, explore the complete vault.</p>
-      
-      <div class="relative w-full max-w-lg">
-        <input type="text" id="search-input" onkeyup="searchVault()" placeholder="Explore Clyde artworks..." class="w-full h-11 pl-4 pr-10 rounded-md bg-[#1e1f22] text-white text-sm placeholder-[#949ba4] focus:outline-none focus:ring-2 focus:ring-[#5865f2]">
-        <i data-lucide="search" class="w-5 h-5 text-[#949ba4] absolute right-3 top-3"></i>
-      </div>
+
+  <!-- =========================================================
+       MAIN CONTENT
+       ========================================================= -->
+
+  <main
+    class="flex-1 flex flex-col
+           bg-[#313338]
+           h-full overflow-y-auto
+           relative"
+  >
+
+    <!-- HERO -->
+
+    <div
+      class="discover-hero relative
+             p-10 md:p-12
+             flex flex-col
+             items-center justify-center
+             text-center"
+    >
+
+      <h1
+        class="text-3xl font-extrabold
+               text-white mb-2"
+      >
+        Find your favorite Clyde art on Discord
+      </h1>
+
+
+      <p
+        class="text-sm text-[#dbdee1]
+               max-w-xl mb-6"
+      >
+        Search real image sources for Clyde,
+        furry Discord mascot art, fan art,
+        memes, logos, and more.
+      </p>
+
+
+      <!-- SEARCH -->
+
+      <form
+        id="search-form"
+        class="relative w-full max-w-2xl"
+      >
+
+        <input
+          type="search"
+          id="search-input"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Search images..."
+          aria-label="Search images"
+          class="search-input
+                 w-full h-12
+                 pl-12 pr-24
+                 rounded-xl
+                 bg-[#1e1f22]
+                 text-white text-sm
+                 placeholder-[#949ba4]
+                 focus:outline-none
+                 focus:ring-2
+                 focus:ring-[#5865f2]"
+        >
+
+
+        <i
+          data-lucide="search"
+          class="w-5 h-5
+                 text-[#949ba4]
+                 absolute left-4 top-3.5
+                 pointer-events-none"
+        ></i>
+
+
+        <button
+          id="search-button"
+          type="submit"
+          class="absolute right-1.5 top-1.5
+                 h-9 px-4
+                 rounded-lg
+                 bg-[#5865f2]
+                 hover:bg-[#4752c4]
+                 text-white text-xs
+                 font-bold
+                 transition-colors"
+        >
+          Search
+        </button>
+
+      </form>
+
+
+      <div
+        id="search-status"
+        class="search-status
+               mt-3
+               text-xs
+               text-[#dbdee1]"
+        aria-live="polite"
+      ></div>
+
     </div>
 
-    <div class="p-8 max-w-7xl mx-auto w-full">
-      <h2 class="text-lg font-bold text-white mb-4" id="section-title">Featured Artworks</h2>
-      
-      <div id="art-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-12">
-        </div>
+
+    <!-- RESULTS -->
+
+    <div
+      class="p-6 md:p-8
+             max-w-7xl
+             mx-auto
+             w-full"
+    >
+
+      <div
+        class="flex items-center
+               justify-between
+               gap-4 mb-4"
+      >
+
+        <h2
+          class="text-lg
+                 font-bold
+                 text-white"
+          id="section-title"
+        >
+          Featured Artworks
+        </h2>
+
+
+        <button
+          id="clear-search"
+          type="button"
+          class="hidden
+                 text-xs
+                 font-semibold
+                 text-[#b5bac1]
+                 hover:text-white
+                 transition-colors"
+        >
+          Clear search
+        </button>
+
+      </div>
+
+
+      <div
+        id="art-grid"
+        class="grid
+               grid-cols-1
+               sm:grid-cols-2
+               lg:grid-cols-3
+               xl:grid-cols-4
+               gap-4
+               pb-12"
+      ></div>
+
     </div>
+
   </main>
 
-  <div id="lightbox" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 cursor-pointer" onclick="closeLightbox()">
-    <img id="lightbox-img" class="max-w-full max-h-full rounded-lg object-contain shadow-2xl">
+
+  <!-- =========================================================
+       LIGHTBOX
+       ========================================================= -->
+
+  <div
+    id="lightbox"
+    class="lightbox
+           fixed inset-0
+           bg-black/90
+           z-50
+           flex items-center
+           justify-center
+           p-4"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Image preview"
+  >
+
+    <button
+      id="lightbox-close"
+      type="button"
+      aria-label="Close image"
+      class="absolute
+             top-5 right-5
+             w-10 h-10
+             rounded-full
+             bg-white/10
+             hover:bg-white/20
+             flex items-center
+             justify-center
+             text-white"
+    >
+      <i
+        data-lucide="x"
+        class="w-6 h-6"
+      ></i>
+    </button>
+
+
+    <div
+      class="max-w-full
+             max-h-full
+             flex flex-col
+             items-center
+             gap-3"
+    >
+
+      <img
+        id="lightbox-img"
+        class="rounded-lg shadow-2xl"
+        alt=""
+      >
+
+      <div
+        id="lightbox-caption"
+        class="text-xs
+               text-[#dbdee1]
+               text-center
+               max-w-2xl"
+      ></div>
+
+    </div>
+
   </div>
 
+
+  <!-- =========================================================
+       JAVASCRIPT
+       ========================================================= -->
+
   <script>
+
     lucide.createIcons();
 
-    // The 'wsrv.nl' link is an image caching proxy that strips away all hotlink protection from the original hosts.
+
+    /*
+     * ==========================================================
+     * STATIC VAULT
+     * ==========================================================
+     *
+     * These are the featured images shown on the homepage.
+     *
+     * Searching does NOT depend on this list anymore.
+     *
+     * The original version only searched this tiny array,
+     * meaning it wasn't actually searching the web.
+     */
+
     const vaultData = [
+
       {
         id: 1,
         title: "Original Furry Clyde",
@@ -123,6 +638,8 @@
         likes: "33.2K Likes",
         date: "May 14, 2021"
       },
+
+
       {
         id: 2,
         title: "Blursed Discord Clyde",
@@ -133,26 +650,32 @@
         likes: "18.5K Likes",
         date: "May 16, 2021"
       },
+
+
       {
         id: 3,
         title: "Classic Clyde Logo (2015)",
         artist: "Discord Official",
         avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Discord",
-        imageUrl: "https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/commons/thumb/7/73/Discord_Color_Text_Logo_%282015-2021%29.svg/800px-Discord_Color_Text_Logo_%282015-2021%29.svg.png",
+        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Discord_Color_Text_Logo_%282015-2021%29.svg/800px-Discord_Color_Text_Logo_%282015-2021%29.svg.png",
         category: "originals",
         likes: "110K Likes",
         date: "May 2015"
       },
+
+
       {
         id: 4,
-        title: "Modern Clyde Update",
+        title: "Modern Discord Logo",
         artist: "Discord Design",
         avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=New",
-        imageUrl: "https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/en/thumb/9/98/Discord_logo.svg/800px-Discord_logo.svg.png",
+        imageUrl: "https://upload.wikimedia.org/wikipedia/en/thumb/9/98/Discord_logo.svg/800px-Discord_logo.svg.png",
         category: "originals",
         likes: "85.4K Likes",
         date: "May 2021"
       },
+
+
       {
         id: 5,
         title: "Gaming Setup Aesthetic",
@@ -163,6 +686,8 @@
         likes: "12.1K Likes",
         date: "Feb 2021"
       },
+
+
       {
         id: 6,
         title: "Retro Pixel Concept",
@@ -173,6 +698,8 @@
         likes: "9.3K Likes",
         date: "Aug 2020"
       },
+
+
       {
         id: 7,
         title: "Server Error Manga",
@@ -183,6 +710,8 @@
         likes: "5.5K Likes",
         date: "Jan 2022"
       },
+
+
       {
         id: 8,
         title: "Abstract Digital Concept",
@@ -193,80 +722,210 @@
         likes: "14.2K Likes",
         date: "Mar 2021"
       }
+
     ];
 
-    let currentFilter = 'all';
 
-    function renderGrid(items) {
-      const grid = document.getElementById("art-grid");
-      grid.innerHTML = "";
+    /*
+     * ==========================================================
+     * APPLICATION STATE
+     * ==========================================================
+     */
 
-      items.forEach(item => {
-        const card = document.createElement("div");
-        card.className = "bg-[#2b2d31] rounded-lg overflow-hidden border border-[#1f2023] hover:shadow-2xl transition-all hover:-translate-y-1 cursor-pointer flex flex-col";
-        card.onclick = () => openLightbox(item.imageUrl);
-        
-        card.innerHTML = `
-          <div class="h-48 bg-cover bg-center bg-[#1e1f22]" style="background-image: url('${item.imageUrl}')"></div>
-          <div class="p-4 flex-1 flex flex-col justify-between">
-            <div>
-              <div class="flex items-center gap-2 mb-2">
-                <img src="${item.avatar}" class="w-5 h-5 rounded-full bg-[#1e1f22]">
-                <span class="text-xs font-bold text-white hover:underline">${item.artist}</span>
-              </div>
-              <h3 class="font-bold text-white text-sm leading-snug mb-1">${item.title}</h3>
-            </div>
-            <div class="mt-4 pt-3 border-t border-[#35373c] flex items-center justify-between text-[11px] text-[#949ba4]">
-              <span>${item.likes}</span>
-              <span>${item.date}</span>
-            </div>
+    const state = {
+
+      category: "all",
+
+      query: "",
+
+      page: 1,
+
+      loading: false,
+
+      searchController: null,
+
+      lastResults: []
+
+    };
+
+
+    /*
+     * ==========================================================
+     * HELPER
+     * ==========================================================
+     */
+
+    const $ = (id) => document.getElementById(id);
+
+
+    function escapeHtml(value = "") {
+
+      return String(value)
+
+        .replaceAll("&", "&amp;")
+
+        .replaceAll("<", "&lt;")
+
+        .replaceAll(">", "&gt;")
+
+        .replaceAll('"', "&quot;")
+
+        .replaceAll("'", "&#039;");
+
+    }
+
+
+    function setStatus(message = "") {
+
+      $("search-status").textContent = message;
+
+    }
+
+
+    function setLoading(loading) {
+
+      state.loading = loading;
+
+      $("search-button").disabled = loading;
+
+      $("search-button").textContent =
+        loading
+          ? "Searching..."
+          : "Search";
+
+    }
+
+
+    /*
+     * ==========================================================
+     * IMAGE CARD
+     * ==========================================================
+     */
+
+    function createCard(item, index) {
+
+      const card = document.createElement("article");
+
+      card.className =
+        "art-card " +
+        "bg-[#2b2d31] " +
+        "rounded-xl " +
+        "overflow-hidden " +
+        "border border-[#1f2023] " +
+        "hover:border-[#4e5058] " +
+        "hover:shadow-2xl " +
+        "transition-all " +
+        "hover:-translate-y-1 " +
+        "cursor-pointer " +
+        "flex flex-col";
+
+
+      card.style.animationDelay =
+        `${Math.min(index * 25, 300)}ms`;
+
+
+      const safeTitle =
+        escapeHtml(item.title || "Untitled image");
+
+      const safeArtist =
+        escapeHtml(item.artist || "Unknown");
+
+      const safeDate =
+        escapeHtml(item.date || "");
+
+      const safeLikes =
+        escapeHtml(item.likes || "");
+
+      const safeAvatar =
+        escapeHtml(item.avatar || "");
+
+      const safeUrl =
+        escapeHtml(item.imageUrl || "");
+
+      const safePage =
+        escapeHtml(item.pageUrl || "");
+
+      const source =
+        escapeHtml(item.source || "Vault");
+
+
+      card.innerHTML = `
+
+        <div class="image-wrap">
+
+          <div class="image-loader">
+
+            <div class="spinner"></div>
+
           </div>
-        `;
-        grid.appendChild(card);
-      });
-    }
 
-    function filterCategory(cat) {
-      currentFilter = cat;
-      
-      // Update UI active button
-      document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('bg-[#35373c]', 'text-white');
-        btn.classList.add('text-[#949ba4]');
-      });
-      
-      const activeBtn = document.getElementById(`nav-${cat}`);
-      if (activeBtn) {
-        activeBtn.classList.add('bg-[#35373c]', 'text-white');
-        activeBtn.classList.remove('text-[#949ba4]');
-      }
 
-      document.getElementById("section-title").innerText = cat === 'all' ? 'Featured Artworks' : `${cat.toUpperCase()} Vault`;
+          <img
+            class="art-image"
+            src="${safeUrl}"
+            alt="${safeTitle}"
+            loading="lazy"
+            decoding="async"
+            referrerpolicy="no-referrer"
+          >
 
-      const filtered = cat === 'all' ? vaultData : vaultData.filter(i => i.category === cat);
-      renderGrid(filtered);
-    }
 
-    function searchVault() {
-      const query = document.getElementById("search-input").value.toLowerCase();
-      const results = vaultData.filter(item => 
-        item.title.toLowerCase().includes(query) || 
-        item.artist.toLowerCase().includes(query)
-      );
-      renderGrid(results);
-    }
+          <div class="broken-image">
 
-    function openLightbox(url) {
-      document.getElementById("lightbox-img").src = url;
-      document.getElementById("lightbox").classList.remove("hidden");
-    }
+            <div>
 
-    function closeLightbox() {
-      document.getElementById("lightbox").classList.add("hidden");
-    }
+              <i
+                data-lucide="image-off"
+                class="w-8 h-8
+                       mx-auto mb-2"
+              ></i>
 
-    // Initial Load
-    renderGrid(vaultData);
-  </script>
-</body>
-</html>
+              <div class="text-xs">
+                Image couldn't be loaded
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div
+            class="source-badge
+                   absolute
+                   top-2 left-2
+                   px-2 py-1
+                   rounded-md
+                   bg-black/65
+                   text-[10px]
+                   font-bold
+                   text-white"
+          >
+            ${source}
+          </div>
+
+        </div>
+
+
+        <div
+          class="p-4
+                 flex-1
+                 flex flex-col
+                 justify-between"
+        >
+
+          <div>
+
+            <div
+              class="flex
+                     items-center
+                     gap-2 mb-2"
+            >
+
+              <img
+                src="${safeAvatar}"
+                class="w-6 h-6
+                       rounded-full
+                       bg-[#1e1f22]"
+                alt=""
+                loading="lazy"
+                referrerpolicy="no-
